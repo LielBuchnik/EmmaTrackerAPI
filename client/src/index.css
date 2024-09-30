@@ -1,0 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Alef&display=swap');
+
+body {
+  font-family: 'Alef', sans-serif;
+  direction: rtl; /* Ensure text flows RTL */
+}
+
+/* Additional styles as needed */

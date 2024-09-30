@@ -1,0 +1,41 @@
+/* HomePage custom styles */
+
+/* Style for rounded images (babies, options) */
+.circle-image {
+    width: 100px;
+    height: 100px;
+    overflow: hidden;
+    border-radius: 50%;
+  }
+  
+  /* Optional style for the plus icon circle */
+  .plus-circle {
+    width: 100px;
+    height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    cursor: pointer;
+  }
+  
+  /* Style for scrollable navigation section */
+  .nav-scroll {
+    white-space: nowrap;
+    overflow-x: auto;
+    display: flex;
+    flex-wrap: nowrap;
+  }
+  
+  .nav-item {
+    display: inline-block;
+    margin: 0 10px;
+  }
+  
+  .nav-item img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+  }
+  

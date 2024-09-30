@@ -1,0 +1,23 @@
+.baby-card {
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+  
+  .border-pink {
+    border: 5px solid pink;
+  }
+  
+  .border-blue {
+    border: 5px solid lightblue;
+  }
+  
+  .baby-image {
+    margin-bottom: 20px;
+  }
+  
+  .baby-card img {
+    border: 5px solid #fff;
+  }
+  
