@@ -9,7 +9,11 @@ import { prefixer } from 'stylis';
 import App from './App'; // Your main component
 import { disableReactDevTools } from '@fvilers/disable-react-devtools'
 
-if (process.env.NODE_ENV === 'production') disableReactDevTools()
+if (process.env.NODE_ENV === 'production'){
+  console.log(`@#!@!# !@#!@#!@ LIEL WE ARE PRODUCTION!#`);
+  
+  disableReactDevTools()
+} 
 
 // Create RTL cache for MUI
 const cacheRtl = createCache({
