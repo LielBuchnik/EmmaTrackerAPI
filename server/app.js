@@ -19,7 +19,7 @@ app.use('/api', bloodSugarRoutes);
 app.use('/api', authRoutes); // Add auth routes
 app.use('/api', homepageRoutes); // Now the /api/homepage route will work
 // Start server
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT_SERVER || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
