@@ -29,25 +29,27 @@ function EditBaby() {
   });
   const navigate = useNavigate();
   
-  const fetchBabyDetails = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/babies/${babyId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
 
-      const baby = response.data;
-      setName(baby.name);
-      setBirthdate(baby.birthdate);
-      setGender(baby.gender);
-      setImageBase64(baby.image); // Load base64 image
-      setImagePreview(`data:image/jpeg;base64,${baby.image}`); // Display image
-    } catch (error) {
-      console.error('Error fetching baby details:', error);
-    }
-  };
 
   useEffect(() => {
+    const fetchBabyDetails = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`/api/babies/${babyId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+  
+        const baby = response.data;
+        setName(baby.name);
+        setBirthdate(baby.birthdate);
+        setGender(baby.gender);
+        setImageBase64(baby.image); // Load base64 image
+        setImagePreview(`data:image/jpeg;base64,${baby.image}`); // Display image
+      } catch (error) {
+        console.error('Error fetching baby details:', error);
+      }
+    };
+
     fetchBabyDetails();
     const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
     if (savedTheme) {
