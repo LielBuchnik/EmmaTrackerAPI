@@ -59,6 +59,23 @@ const HomePage = () => {
     }
   }, []);
 
+  const fetchAllBabyLogs = async (token) => {
+    try {
+      const bloodResponse = await axios.get(`/api/babies-all/blood-sugars`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
+      });
+      const foodResponse = await axios.get(`/api/babies-all/foods`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
+      });
+      setBloodSugarData(bloodResponse.data);
+      setFoodLogs(foodResponse.data);
+    } catch (error) {
+      console.error('Error fetching all logs', error);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,23 +117,6 @@ const HomePage = () => {
     }
   };
 
-  const fetchAllBabyLogs = async (token) => {
-    try {
-      const bloodResponse = await axios.get(`/api/babies-all/blood-sugars`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
-      });
-      const foodResponse = await axios.get(`/api/babies-all/foods`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
-      });
-      setBloodSugarData(bloodResponse.data);
-      setFoodLogs(foodResponse.data);
-    } catch (error) {
-      console.error('Error fetching all logs', error);
-    }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     sessionStorage.removeItem('token');
@@ -139,9 +139,9 @@ const HomePage = () => {
   });
 
   // Disable swipe gestures inside the table
-  const handleTableScroll = (e) => {
-    e.stopPropagation();
-  };
+  // const handleTableScroll = (e) => {
+  //   e.stopPropagation();
+  // };
 
   // Function to format blood sugar chart data for multiple babies
   const getChartData = () => {

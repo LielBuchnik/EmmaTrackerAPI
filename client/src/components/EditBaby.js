@@ -13,7 +13,6 @@ import {
   FormControl,
   Avatar,
   Divider,
-  IconButton,
 } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
@@ -29,15 +28,7 @@ function EditBaby() {
     textColor: '#000',
   });
   const navigate = useNavigate();
-
-  useEffect(() => {
-    fetchBabyDetails();
-    const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, [babyId]);
-
+  
   const fetchBabyDetails = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -55,6 +46,14 @@ function EditBaby() {
       console.error('Error fetching baby details:', error);
     }
   };
+
+  useEffect(() => {
+    fetchBabyDetails();
+    const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, [babyId]);
 
   // Convert image file to base64
   const handleImageChange = (e) => {

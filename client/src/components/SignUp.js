@@ -96,6 +96,7 @@ const SignUp = () => {
         password,
         theme: selectedTheme, // Save the selected theme
       });
+      console.log(response);
 
       // Save the selected theme to localStorage
       localStorage.setItem('userTheme', JSON.stringify(selectedTheme));
