@@ -38,7 +38,7 @@ function BabyList() {
         throw new Error('No token found');
       }
 
-      const response = await axios.get('/api/babies', {
+      const response = await axios.get('http://185.47.173.90:3001/api/babies', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -53,7 +53,7 @@ function BabyList() {
   const handleDeleteBaby = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/babies/${selectedBabyId}`, {
+      await axios.delete(`http://185.47.173.90:3001/api/babies/${selectedBabyId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

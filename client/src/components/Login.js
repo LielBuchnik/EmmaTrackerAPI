@@ -39,7 +39,7 @@ const Login = () => {
     try {
       console.log("Trying to get response");
 
-      const response = await axios.post('/api/login', {
+      const response = await axios.post('http://185.47.173.90:3001/api/login', {
         username,
         password,
         rememberMe,

@@ -32,7 +32,7 @@ const NavBar = () => {
     const fetchBabies = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get('/api/babies', {
+        const response = await axios.get('http://185.47.173.90:3001/api/babies', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBabies(response.data);
@@ -63,7 +63,7 @@ const NavBar = () => {
 
   const handleBabyAdded = async () => {
     const token = localStorage.getItem('token');
-    const response = await axios.get('/api/babies', {
+    const response = await axios.get('http://185.47.173.90:3001/api/babies', {
       headers: { Authorization: `Bearer ${token}` },
     });
     setBabies(response.data);

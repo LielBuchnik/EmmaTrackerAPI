@@ -27,8 +27,10 @@ router.get('/babies', authenticateToken, async (req, res) => {
 });
 
 // Route to create a new baby with base64 image
-router.post('/babies', authenticateToken, async (req, res) => {
-  const { name, birthdate, gender, imageBase64 } = req.body;
+router.post('/babies', authenticateToken, upload.single('image'), async (req, res) => {
+  const { name, birthdate, gender } = req.body;
+  const imageBase64 = req.file ? req.file.buffer.toString('base64') : ''; // Convert uploaded file to base64
+  console.log("Received data:", { name, birthdate, gender, imageBase64 });
 
   try {
     // Store baby details including the Base64 image string in the database
@@ -40,9 +42,11 @@ router.post('/babies', authenticateToken, async (req, res) => {
       userId: req.user.id, // Assume the user is authenticated and their ID is in the token
     });
 
+    console.log("Baby created successfully:", newBaby);
     res.json(newBaby);
   } catch (error) {
-    res.status(500).json({ error: 'Error adding baby' });
+    console.error("Error adding baby:", error);
+    res.status(500).json({ error: 'Error adding baby', details: error.message });
   }
 });
 

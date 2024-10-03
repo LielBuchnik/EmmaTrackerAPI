@@ -59,10 +59,11 @@ function BabyForm({ onBabyAdded }) {
     formData.append('birthdate', birthdate.toISOString());
     formData.append('gender', gender);
     formData.append('image', image);
-
+    console.log(name, birthdate, gender, image);
+    
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/babies', formData, {
+      await axios.post('http://185.47.173.90:3001/api/babies', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           Authorization: `Bearer ${token}`,

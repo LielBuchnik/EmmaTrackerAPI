@@ -90,7 +90,7 @@ const SignUp = () => {
     }
 
     try {
-      const response = await axios.post('/api/signup', {
+      const response = await axios.post('http://185.47.173.90:3001/api/signup', {
         username,
         email,
         password,

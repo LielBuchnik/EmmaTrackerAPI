@@ -50,7 +50,7 @@ function BloodSugarLog() {
   const fetchBloodSugars = async (babyId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/babies/${babyId}/blood-sugars`, {
+      const response = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}/blood-sugars`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBloodSugars(response.data);
@@ -70,7 +70,7 @@ function BloodSugarLog() {
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `/api/babies/${finalBabyId}/blood-sugars`,
+        `http://185.47.173.90:3001/api/babies/${finalBabyId}/blood-sugars`,
         {
           level,
           measurementTime: measurementTime.toISOString(),

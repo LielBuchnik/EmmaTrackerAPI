@@ -11,15 +11,14 @@ import {
   Card,
   CardContent,
   Divider,
-  // Accordion,
-  // AccordionSummary,
-  // AccordionDetails,
   IconButton,
   TextField,
   MenuItem,
-
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-// import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LocalDrinkIcon from '@mui/icons-material/LocalDrink';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -32,6 +31,8 @@ function FeedingLog() {
   const { selectedBabyId } = useContext(BabyContext);
   const [feedings, setFeedings] = useState([]);
   const [lastFeeding, setLastFeeding] = useState(null); // Track last feeding
+  const [dialogOpen, setDialogOpen] = useState(false); // Dialog control
+  const [selectedFeeding, setSelectedFeeding] = useState(null); // Selected feeding for dialog
   const [type, setType] = useState('מטרנה');
   const [customType, setCustomType] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -67,7 +68,7 @@ function FeedingLog() {
   const fetchFeedings = async (babyId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`/api/babies/${babyId}/foods?limit=10`, {
+      const response = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}/foods?limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFeedings(response.data);
@@ -106,7 +107,7 @@ function FeedingLog() {
         },
       };
 
-      await axios.post(`/api/babies/${finalBabyId}/foods-and-blood-sugar`, payload, {
+      await axios.post(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods-and-blood-sugar`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -122,6 +123,16 @@ function FeedingLog() {
     } catch (error) {
       console.error('Error adding feeding and blood sugar data:', error);
     }
+  };
+
+  const handleDialogOpen = (feeding) => {
+    setSelectedFeeding(feeding);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedFeeding(null);
   };
 
   return (
@@ -263,21 +274,18 @@ function FeedingLog() {
             </Typography>
             <Divider sx={{ mb: 2, backgroundColor: theme.textColor }} />
 
-            <Timeline>
+            <Timeline position="alternate" sx={{ flexDirection: 'row' }}>
               {feedings.map((feeding) => (
-                <TimelineItem key={feeding.id}>
+                <TimelineItem key={feeding.id} sx={{ minWidth: '120px' }}>
                   <TimelineSeparator>
                     <TimelineDot color="primary">
-                      <IconButton onClick={() => alert(`Details of feeding: ${feeding.notes || 'אין הערות'}`)}>
-                        <LocalDrinkIcon />
+                      <IconButton onClick={() => handleDialogOpen(feeding)} size="small">
+                        <LocalDrinkIcon fontSize="small" />
                       </IconButton>
                     </TimelineDot>
                     <TimelineConnector />
                   </TimelineSeparator>
-                  <TimelineContent>
-                    <Typography variant="body1">
-                      {`סוג: ${feeding.type}, כמות: ${feeding.quantity} גרם`}
-                    </Typography>
+                  <TimelineContent sx={{ textAlign: 'center' }}>
                     <Typography variant="body2" color="textSecondary">
                       <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />
                       {new Date(feeding.time).toLocaleString('he-IL')}
@@ -288,6 +296,26 @@ function FeedingLog() {
             </Timeline>
           </Box>
         )}
+
+        {/* Feeding Details Dialog */}
+        <Dialog open={dialogOpen} onClose={handleDialogClose}>
+          <DialogTitle>פרטי רישום האכלה</DialogTitle>
+          <DialogContent>
+            {selectedFeeding && (
+              <>
+                <Typography>סוג: {selectedFeeding.type}</Typography>
+                <Typography>כמות: {selectedFeeding.quantity} גרם</Typography>
+                <Typography>הערות: {selectedFeeding.notes || 'אין הערות'}</Typography>
+                {selectedFeeding.bloodSugar && (
+                  <Typography>רמת סוכר בדם: {selectedFeeding.bloodSugar.level} mg/dL</Typography>
+                )}
+              </>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleDialogClose} color="primary">סגור</Button>
+          </DialogActions>
+        </Dialog>
       </Container>
     </LocalizationProvider>
   );

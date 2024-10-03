@@ -65,11 +65,11 @@ const HomePage = () => {
     const fetchLogs = async (babyId) => {
       try {
         const token = localStorage.getItem('token');
-        const bloodResponse = await axios.get(`/api/babies/${babyId}/blood-sugars`, {
+        const bloodResponse = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}/blood-sugars`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
         });
-        const foodResponse = await axios.get(`/api/babies/${babyId}/foods?limit=10`, {
+        const foodResponse = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}/foods?limit=10`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBloodSugarData(bloodResponse.data);
@@ -81,11 +81,11 @@ const HomePage = () => {
 
     const fetchAllBabyLogs = async (token) => {
       try {
-        const bloodResponse = await axios.get(`/api/babies-all/blood-sugars`, {
+        const bloodResponse = await axios.get(`http://185.47.173.90:3001/api/babies-all/blood-sugars`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
         });
-        const foodResponse = await axios.get(`/api/babies-all/foods`, {
+        const foodResponse = await axios.get(`http://185.47.173.90:3001/api/babies-all/foods`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { startDate: startDate.toISOString(), endDate: endDate.toISOString() }
         });
@@ -101,7 +101,7 @@ const HomePage = () => {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No token found');
 
-        const babyResponse = await axios.get('/api/babies', {
+        const babyResponse = await axios.get('http://185.47.173.90:3001/api/babies', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setBabies(babyResponse.data);
@@ -304,7 +304,7 @@ const HomePage = () => {
                       aria-controls={`panel-content-${log.id}`}
                       id={`panel-header-${log.id}`}
                     >
-                      <Typography sx={{ color: theme.textColor }}>
+                      <Typography sx={{ color: `#000000` }}>
                         {babies.find(b => b.id === log.babyId)?.name} - {dayjs(log.time).format('dddd, DD.MM.YY')} - {log.type}
                       </Typography>
                     </AccordionSummary>
@@ -313,7 +313,7 @@ const HomePage = () => {
                         sx={{
                           p: 2,
                           backgroundColor: theme.background,
-                          color: theme.textColor,
+                          color: `#000000`,
                           borderRadius: '8px',
                           boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
                         }}

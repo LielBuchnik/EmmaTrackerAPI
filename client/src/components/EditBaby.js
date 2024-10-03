@@ -35,7 +35,7 @@ function EditBaby() {
     const fetchBabyDetails = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`/api/babies/${babyId}`, {
+        const response = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
   
@@ -81,7 +81,7 @@ function EditBaby() {
   
     try {
       const token = localStorage.getItem('token');
-      await axios.post('/api/babies', babyData, {
+      await axios.post('http://185.47.173.90:3001/api/babies', babyData, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
