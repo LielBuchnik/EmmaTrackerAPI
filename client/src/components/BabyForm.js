@@ -14,18 +14,23 @@ import {
   Card,
   CardContent,
   Avatar,
+  Snackbar,
 } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import { LocalizationProvider, DatePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import { useNavigate } from 'react-router-dom';
 
-function BabyForm({ onBabyAdded }) {
+function BabyForm() {
   const [name, setName] = useState('');
   const [birthdate, setBirthdate] = useState(dayjs());
   const [gender, setGender] = useState('boy');
   const [imagePreview, setImagePreview] = useState(null);
   const [image, setImage] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(false); // For Snackbar
+
+  const navigate = useNavigate(); // Hook to redirect after success
 
   const [theme, setTheme] = useState({
     background: 'linear-gradient(45deg, #D9AFD9 0%, #97D9E1 100%)',
@@ -59,8 +64,7 @@ function BabyForm({ onBabyAdded }) {
     formData.append('birthdate', birthdate.toISOString());
     formData.append('gender', gender);
     formData.append('image', image);
-    console.log(name, birthdate, gender, image);
-    
+
     try {
       const token = localStorage.getItem('token');
       await axios.post('http://185.47.173.90:3001/api/babies', formData, {
@@ -70,11 +74,11 @@ function BabyForm({ onBabyAdded }) {
         },
       });
 
-      onBabyAdded();
-      setName('');
-      setBirthdate(dayjs());
-      setGender('boy');
-      setImage(null);
+      // Show success message and redirect to baby list after 2 seconds
+      setSuccessMessage(true);
+      setTimeout(() => {
+        navigate('/babies');
+      }, 2000);
     } catch (error) {
       console.error('Error adding baby:', error);
     }
@@ -89,21 +93,70 @@ function BabyForm({ onBabyAdded }) {
             mt: 4,
             background: theme.background,
             color: theme.textColor,
+            textAlign: 'center',
           }}
         >
           <CardContent>
-            <Typography
-              variant="h5"
-              align="center"
-              gutterBottom
-              sx={{ color: theme.textColor }}
-            >
+            {/* Baby Image at the Top */}
+            <Box sx={{ mb: 3 }}>
+              <Box sx={{ position: 'relative', mb: 2, cursor: 'pointer', textAlign: 'center' }}>
+                <Avatar
+                  src={imagePreview}
+                  alt="baby"
+                  sx={{
+                    width: 150,
+                    height: 150,
+                    border: `4px solid ${theme.textColor}`,
+                    margin: '0 auto',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                    },
+                  }}
+                />
+                {/* Hidden file input */}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  id="image-upload"
+                />
+                <label htmlFor="image-upload">
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      width: 150,
+                      height: 150,
+                      top: 0,
+                      left: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                      borderRadius: '50%',
+                      opacity: 0,
+                      transition: 'opacity 0.3s ease-in-out',
+                      cursor: 'pointer',
+                      '&:hover': {
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    <CameraAltIcon sx={{ color: '#fff', fontSize: 30 }} />
+                  </Box>
+                </label>
+              </Box>
+            </Box>
+
+            <Typography variant="h5" align="center" gutterBottom sx={{ color: theme.textColor }}>
               הוסף תינוק חדש
             </Typography>
+
+            {/* Centered Form Inputs */}
             <Box component="form" onSubmit={handleSubmit}>
-              <Grid container spacing={3}>
+              <Grid container spacing={3} justifyContent="center">
                 {/* Name Field */}
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={10}>
                   <TextField
                     label="שם"
                     value={name}
@@ -116,7 +169,7 @@ function BabyForm({ onBabyAdded }) {
                 </Grid>
 
                 {/* Birthdate Picker */}
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={10}>
                   <DatePicker
                     label="תאריך לידה"
                     value={birthdate}
@@ -134,7 +187,7 @@ function BabyForm({ onBabyAdded }) {
                 </Grid>
 
                 {/* Gender Select */}
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={10}>
                   <FormControl fullWidth required>
                     <InputLabel sx={{ color: theme.textColor }}>מין</InputLabel>
                     <Select
@@ -154,58 +207,8 @@ function BabyForm({ onBabyAdded }) {
                   </FormControl>
                 </Grid>
 
-                {/* Image Upload */}
-                <Grid item xs={12}>
-                  <Box sx={{ position: 'relative', mb: 2, cursor: 'pointer', textAlign: 'center' }}>
-                    <Avatar
-                      src={imagePreview}
-                      alt="baby"
-                      sx={{
-                        width: 150,
-                        height: 150,
-                        border: `4px solid ${theme.textColor}`,
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                        },
-                      }}
-                    />
-                    {/* Hidden file input */}
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleImageChange}
-                      id="image-upload"
-                    />
-                    <label htmlFor="image-upload">
-                      <Box
-                        sx={{
-                          position: 'absolute',
-                          width: 150,
-                          height: 150,
-                          top: 0,
-                          left: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: 'rgba(0, 0, 0, 0.4)',
-                          borderRadius: '50%',
-                          opacity: 0,
-                          transition: 'opacity 0.3s ease-in-out',
-                          cursor: 'pointer',
-                          '&:hover': {
-                            opacity: 1,
-                          },
-                        }}
-                      >
-                        <CameraAltIcon sx={{ color: '#fff', fontSize: 30 }} />
-                      </Box>
-                    </label>
-                  </Box>
-                </Grid>
-
                 {/* Submit Button */}
-                <Grid item xs={12}>
+                <Grid item xs={12} sm={10}>
                   <Button
                     type="submit"
                     variant="contained"
@@ -223,6 +226,13 @@ function BabyForm({ onBabyAdded }) {
             </Box>
           </CardContent>
         </Card>
+
+        {/* Success Snackbar */}
+        <Snackbar
+          open={successMessage}
+          autoHideDuration={2000}
+          message="תינוק נוסף בהצלחה!"
+        />
       </Container>
     </LocalizationProvider>
   );
