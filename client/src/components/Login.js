@@ -21,7 +21,7 @@ const Login = () => {
 
   // Check if token exists and redirect if valid
   useEffect(() => {
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const token = localStorage.getItem('token');
     if (token) {
       navigate('/homepage');
     }
