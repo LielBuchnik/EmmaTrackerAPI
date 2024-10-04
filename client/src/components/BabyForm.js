@@ -12,7 +12,6 @@ import {
   Select,
   FormControl,
   Avatar,
-  Divider,
   Snackbar,
 } from '@mui/material';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
@@ -167,7 +166,6 @@ function EditBaby() {
           </Box>
         </Box>
 
-        <Divider sx={{ mb: 3, backgroundColor: theme.textColor }} />
 
         <form onSubmit={handleSubmit}>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
