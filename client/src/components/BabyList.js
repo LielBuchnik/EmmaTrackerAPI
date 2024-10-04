@@ -18,6 +18,7 @@ import {
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import { useTheme } from '@mui/material/styles';
+import { AddCircleOutline } from '@mui/icons-material'; // Ensure you have necessary icons
 
 function BabyList() {
   const [babies, setBabies] = useState([]);
@@ -90,6 +91,18 @@ function BabyList() {
     setSelectedBabyId(null); // Reset the selected baby ID after closing
   };
 
+  // Define solid background colors based on gender
+  const getCardBackground = (gender) => {
+    switch (gender) {
+      case 'girl':
+        return theme.palette.pink?.[300] || '#f8bbd0'; // Fallback color if palette.pink is undefined
+      case 'boy':
+        return theme.palette.blue?.[300] || '#bbdefb'; // Fallback color if palette.blue is undefined
+      default:
+        return theme.palette.background.paper; // Default background from theme
+    }
+  };
+
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" align="center" sx={{ mt: 4, mb: 4 }}>
@@ -102,6 +115,7 @@ function BabyList() {
         variant="contained"
         color="primary"
         sx={{ mb: 3 }}
+        startIcon={<AddCircleOutline />} // Add an icon to the button
       >
         הוסף תינוק
       </Button>
@@ -113,15 +127,19 @@ function BabyList() {
               sx={{
                 borderRadius: '10px',
                 boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
-                background: theme.background, // Use theme background
+                background: getCardBackground(baby.gender), // Dynamic background based on gender
                 position: 'relative', // Make the card relative to position the IconButton
+                height: '100%', // Ensure cards have the same height
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
               }}
             >
-              <CardContent sx={{ textAlign: 'center', color: theme.textColor }}>
+              <CardContent sx={{ textAlign: 'center', color: theme.palette.getContrastText(getCardBackground(baby.gender)) }}>
                 {/* 3-dots menu */}
                 <IconButton
                   aria-label="settings"
-                  sx={{ position: 'absolute', top: 8, right: 8, color: theme.textColor }}
+                  sx={{ position: 'absolute', top: 8, right: 8, color: theme.palette.getContrastText(getCardBackground(baby.gender)) }}
                   onClick={(e) => handleMenuOpen(e, baby.id)} // Pass baby ID
                 >
                   <MoreVertIcon />
@@ -138,7 +156,7 @@ function BabyList() {
                     },
                   }}
                 >
-                  <MenuItem component={Link} to={`/edit-baby/${baby.id}`}>
+                  <MenuItem component={Link} to={`/edit-baby/${baby.id}`} onClick={handleMenuClose}>
                     ערוך תינוק
                   </MenuItem>
                   <MenuItem onClick={() => openDeleteModal(baby.id)}>מחק תינוק</MenuItem>
@@ -153,11 +171,9 @@ function BabyList() {
                     height: 100,
                     mx: 'auto',
                     mb: 2,
-                    border: `4px solid ${baby.gender === 'girl' ? theme.palette.secondary.main : theme.palette.primary.main
-                      }`,
+                    border: `4px solid ${baby.gender === 'girl' ? theme.palette.secondary.main : theme.palette.primary.main}`,
                   }}
                 />
-
 
                 <Typography variant="h5" gutterBottom>
                   {baby.name}
@@ -169,7 +185,7 @@ function BabyList() {
                   גיל: {calculateAge(baby.birthdate)}
                 </Typography>
               </CardContent>
-              <CardActions sx={{ justifyContent: 'center', color: theme.textColor }}>
+              <CardActions sx={{ justifyContent: 'center', color: theme.palette.getContrastText(getCardBackground(baby.gender)) }}>
                 <Button
                   size="small"
                   variant="outlined"
@@ -208,8 +224,8 @@ function BabyList() {
             left: '50%',
             transform: 'translate(-50%, -50%)',
             width: 400,
-            bgcolor: theme.background, // Use theme background
-            color: theme.textColor,
+            bgcolor: getCardBackground(babies.find(baby => baby.id === selectedBabyId)?.gender) || theme.palette.background.paper, // Dynamic background
+            color: theme.palette.getContrastText(getCardBackground(babies.find(baby => baby.id === selectedBabyId)?.gender) || theme.palette.background.paper),
             boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.3)', // Add shadow to modal
             p: 4,
             borderRadius: '8px',
@@ -219,7 +235,7 @@ function BabyList() {
             מחק תינוק
           </Typography>
           <Typography id="delete-confirmation-description" sx={{ mb: 2 }}>
-            האם אתה בטוח שברצונך למחוק את התינוק {babies.find(baby => baby.id === selectedBabyId)?.name}?
+            האם אתה בטוח שברצונך למחוק את התינוק "{babies.find(baby => baby.id === selectedBabyId)?.name}"?
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Button variant="outlined" onClick={() => setShowModal(false)}>

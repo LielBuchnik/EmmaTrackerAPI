@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { BabyContext } from '../context/BabyContext';
 import { AuthContext } from '../context/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
@@ -28,6 +28,8 @@ const NavBar = () => {
   }); // Default theme
   const location = useLocation(); // Get current location to highlight active link
 
+  const scrollRef = useRef(null); // Reference to the scroll container
+
   useEffect(() => {
     const fetchBabies = async () => {
       try {
@@ -49,6 +51,19 @@ const NavBar = () => {
       setTheme(savedTheme);
     }
   }, []);
+
+  useEffect(() => {
+    // After the component mounts, scroll to the left side
+    if (scrollRef.current) {
+      // For RTL, setting scrollLeft to the maximum scroll value
+      // can vary between browsers. Here's a cross-browser approach:
+      const scrollContainer = scrollRef.current;
+      // Using a timeout to ensure rendering is complete
+      setTimeout(() => {
+        scrollContainer.scrollLeft = scrollContainer.scrollWidth;
+      }, 0);
+    }
+  }, [babies]); // Depend on babies to ensure items are loaded
 
   const handleBabySelection = (e) => {
     const babyId = e.target.value;
@@ -72,9 +87,17 @@ const NavBar = () => {
 
   return (
     <>
-      <AppBar position="static" sx={{ backgroundColor: 'transparent' }}>
-        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
-
+      {/* AppBar Section */}
+      <AppBar position="static" sx={{ backgroundColor: 'transparent', width: '100%' }}>
+        <Toolbar
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: 'relative',
+            width: '100%', // Ensure Toolbar spans full width
+          }}
+        >
           {/* Baby selection with fixed width */}
           <Box sx={{ flex: '0 0 20%' }}>
             <FormControl
@@ -156,51 +179,79 @@ const NavBar = () => {
         </Toolbar>
       </AppBar>
 
-
-
       {/* Horizontal Scroll with Icons */}
       <Box
+        ref={scrollRef} // Attach ref to the Box
         sx={{
           display: 'flex',
-          justifyContent: 'center',
-          overflowX: 'scroll',  // Allows horizontal scroll
+          flexDirection: 'row', // Set direction to row
+          justifyContent: 'flex-start', // Align items to the start (right in RTL)
+          alignItems: 'center', // Vertically center items
+          overflowX: 'auto', // Enables horizontal scroll
+          direction: 'rtl', // Sets RTL layout direction
+          width: '100%', // Ensure the Box spans full width
           p: 2,
+          px: 4, // Adds padding to both left and right ends
+          scrollPaddingLeft: '16px', // Ensures the first item is fully visible in RTL
+          gap: 4, // Equal spacing between items
           backgroundColor: 'transparent',
           '&::-webkit-scrollbar': {
-            display: 'none', // Hide scrollbar in WebKit browsers (Chrome, Safari)
+            display: 'none', // Hides scrollbar in WebKit browsers
           },
-          '-ms-overflow-style': 'none',  // Hide scrollbar in Internet Explorer 10+
-          'scrollbar-width': 'none',  // Hide scrollbar in Firefox
+          '-ms-overflow-style': 'none', // Hides scrollbar in IE 10+
+          'scrollbar-width': 'none', // Hides scrollbar in Firefox
         }}
       >
         {[
-          { to: '/settings', label: 'הגדרות', icon: './images/baby-icon.png' },
+          { to: '/settings', label: 'הגדרות', icon: './images/settings-icon.png' },
           { to: '/blood-sugar', label: 'סוכר בדם', icon: './images/blood-sugar-icon.png' },
           { to: '/food', label: 'מזון', icon: './images/food-icon.png' },
           { to: '/babies', label: 'תינוק', icon: './images/baby-icon.png' },
-
+          { to: '/add-baby', label: 'הוסף תינוק', icon: 'add_circle_outline' }, // Add Baby link
         ].map((item) => (
-          <Box textAlign="center" sx={{ mx: 2 }} key={item.to}>
-            <Link to={item.to} style={{ textDecoration: 'none' }}>
+          <Box
+            textAlign="center"
+            sx={{
+              display: 'flex', // Use flex to align icon and text
+              flexDirection: 'column', // Stack icon and text vertically
+              alignItems: 'center', // Center align items horizontally
+              justifyContent: 'center', // Center align items vertically
+              flexShrink: 0, // Prevents items from shrinking
+              width: '60px', // Increased width to accommodate text wrapping
+            }}
+            key={item.to}
+          >
+            <Link
+              to={item.to}
+              style={{
+                textDecoration: 'none',
+                color: location.pathname === item.to ? '#FFFFFF' : '#9E9E9E',
+              }}
+              onClick={item.to === '/add-baby' ? () => setShowBabyForm(true) : undefined} // Open form for Add Baby
+            >
               <Box
-                component="img"
-                src={require(`${item.icon}`)}
+                component={item.to === '/add-baby' ? AddCircleOutline : 'img'}
+                src={item.icon !== 'add_circle_outline' ? require(`${item.icon}`) : undefined}
                 alt={item.label}
                 sx={{
-                  width: 75,
-                  height: 75,
+                  width: 50,
+                  height: 50,
                   objectFit: 'cover',
                   borderRadius: '50%',
                   border: location.pathname === item.to ? '2px solid #FFFFFF' : '2px solid transparent',
                   transition: 'border 0.3s ease',
+                  fontSize: item.to === '/add-baby' ? 45 : undefined, // Font size for icon
                 }}
               />
               <Typography
                 variant="caption"
                 display="block"
                 sx={{
-                  color: location.pathname === item.to ? '#FFFFFF' : '#9E9E9E',
                   fontWeight: 600,
+                  whiteSpace: 'normal', // Allows text to wrap
+                  overflowWrap: 'break-word', // Wrap text without breaking words
+                  wordBreak: 'break-word', // Avoid breaking words
+                  mt: 1, // Add some margin-top to separate icon and text
                 }}
               >
                 {item.label}
@@ -208,40 +259,10 @@ const NavBar = () => {
             </Link>
           </Box>
         ))}
-
-        {/* Button to Add a Baby with Plus Icon */}
-        <Box textAlign="center" sx={{ mx: 2 }}>
-          <Button
-            onClick={() => setShowBabyForm(true)}
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'transparent',
-              color: '#9E9E9E',
-              '&:hover': {
-                color: '#FFFFFF', // Change color on hover
-              },
-              border: 'none',
-            }}
-          >
-            <AddCircleOutline sx={{ fontSize: 75 }} /> {/* Plus icon */}
-            <Typography
-              variant="caption"
-              sx={{
-                fontWeight: 600,
-                color: location.pathname === '/add-baby' ? '#FFFFFF' : '#9E9E9E',
-              }}
-            >
-              הוסף תינוק חדש
-            </Typography>
-          </Button>
-        </Box>
       </Box>
 
       {/* Modal for Adding a New Baby */}
-      <Modal open={showBabyForm} onClose={() => setShowBabyForm(false)}>
+      {/* <Modal open={showBabyForm} onClose={() => setShowBabyForm(false)}>
         <Box
           sx={{
             position: 'absolute',
@@ -255,13 +276,12 @@ const NavBar = () => {
             borderRadius: 2,
           }}
         >
-          {/* Pass theme as a prop to BabyForm */}
           <BabyForm onBabyAdded={handleBabyAdded} theme={theme} />
           <Button onClick={() => setShowBabyForm(false)} variant="contained" sx={{ mt: 2 }}>
             סגור
           </Button>
         </Box>
-      </Modal>
+      </Modal> */}
     </>
   );
 };
