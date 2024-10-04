@@ -51,21 +51,19 @@ function FeedingLog() {
   });
 
   const finalBabyId = babyId || selectedBabyId;
-
+  const fetchFeedings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods?limit=10`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setFeedings(response.data);
+      setLastFeeding(response.data[0]); // Most recent feeding
+    } catch (error) {
+      console.error('Error fetching feedings:', error);
+    }
+  };
   useEffect(() => {
-    const fetchFeedings = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods?limit=10`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setFeedings(response.data);
-        setLastFeeding(response.data[0]); // Most recent feeding
-      } catch (error) {
-        console.error('Error fetching feedings:', error);
-      }
-    };
-
     if (finalBabyId) {
       fetchFeedings();
     }
