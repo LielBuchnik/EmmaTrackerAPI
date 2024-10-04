@@ -17,13 +17,22 @@ import {
   TextField,
   Grid,
   MenuItem,
-  IconButton,
 } from '@mui/material';
 import LocalDrinkIcon from '@mui/icons-material/LocalDrink';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { Timeline, TimelineItem, TimelineSeparator, TimelineDot, TimelineConnector, TimelineContent } from '@mui/lab';
+import { ResponsiveContainer, ScatterChart, XAxis, YAxis, Scatter, Tooltip } from 'recharts';
+
+const feedingTypes = {
+  מטרנה: '#ff5722', // Orange
+  'חלב אם': '#2196f3', // Blue
+  סימילק: '#4caf50', // Green
+  נוטרילון: '#9c27b0', // Purple
+  אחר: '#f44336', // Red
+};
 
 function FeedingLog() {
   const { babyId } = useParams();
@@ -34,28 +43,20 @@ function FeedingLog() {
   const [selectedFeeding, setSelectedFeeding] = useState(null);
   const [type, setType] = useState('מטרנה');
   const [customType, setCustomType] = useState('');
+  const [isCustomType, setIsCustomType] = useState(false); // ADDED
   const [quantity, setQuantity] = useState('');
   const [time, setTime] = useState(dayjs());
   const [notes, setNotes] = useState('');
-  const [isCustomType, setIsCustomType] = useState(false);
   const [bloodSugarLevel, setBloodSugarLevel] = useState('');
   const [measurementTime, setMeasurementTime] = useState(dayjs());
-  const [zoomLevel, setZoomLevel] = useState(1); // Control the zoom level
-
-  const [theme, setTheme] = useState({
-    backgroundColor: '#D9AFD9',
-    backgroundImage: 'linear-gradient(0deg, #D9AFD9 0%, #97D9E1 100%)',
-    textColor: '#333',
-  });
 
   const finalBabyId = babyId || selectedBabyId;
 
   useEffect(() => {
-    const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
-    if (savedTheme) {
-      setTheme(savedTheme);
+    if (finalBabyId) {
+      fetchFeedings(finalBabyId);
     }
-  }, []);
+  }, [finalBabyId]);
 
   const fetchFeedings = async (babyId) => {
     try {
@@ -70,14 +71,12 @@ function FeedingLog() {
     }
   };
 
-  useEffect(() => {
-    if (finalBabyId) {
-      fetchFeedings(finalBabyId);
-    }
-  }, [finalBabyId]);
-
   const handleDialogOpen = (feeding) => {
     setSelectedFeeding(feeding);
+    setType(feeding.type);
+    setQuantity(feeding.quantity);
+    setTime(dayjs(feeding.time));
+    setNotes(feeding.notes);
     setDialogOpen(true);
   };
 
@@ -102,7 +101,7 @@ function FeedingLog() {
 
     try {
       const token = localStorage.getItem('token');
-      const selectedFoodType = isCustomType ? customType : type;
+      const selectedFoodType = customType || type;
 
       const payload = {
         type: selectedFoodType,
@@ -115,9 +114,17 @@ function FeedingLog() {
         },
       };
 
-      await axios.post(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods-and-blood-sugar`, payload, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      if (selectedFeeding) {
+        // Update feeding log
+        await axios.put(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods/${selectedFeeding.id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      } else {
+        // Add new feeding log
+        await axios.post(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods-and-blood-sugar`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
 
       setType('מטרנה');
       setCustomType('');
@@ -127,26 +134,34 @@ function FeedingLog() {
       setBloodSugarLevel('');
       setMeasurementTime(dayjs());
       fetchFeedings(finalBabyId);
+      handleDialogClose();
     } catch (error) {
-      console.error('Error adding feeding and blood sugar data:', error);
+      console.error('Error saving feeding data:', error);
     }
   };
 
-  // Handle pinch-to-zoom gesture
-  const handleZoom = (e) => {
-    if (e.touches && e.touches.length === 2) {
-      const distance = Math.hypot(
-        e.touches[0].pageX - e.touches[1].pageX,
-        e.touches[0].pageY - e.touches[1].pageY
-      );
+  const getScatterData = () => {
+    return feedings.map((feeding) => ({
+      date: dayjs(feeding.time).format('YYYY-MM-DD'),
+      time: dayjs(feeding.time).hour() + dayjs(feeding.time).minute() / 60, // Time in decimal hours
+      feeding,
+      type: feeding.type,
+      quantity: feeding.quantity,
+    }));
+  };
 
-      setZoomLevel((prevZoom) => {
-        let newZoom = prevZoom + (distance > 100 ? 0.1 : -0.1);
-        if (newZoom < 0.5) newZoom = 0.5;
-        if (newZoom > 2) newZoom = 2;
-        return newZoom;
-      });
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const { feeding } = payload[0].payload;
+      return (
+        <Box sx={{ backgroundColor: 'white', padding: 2, boxShadow: 1 }}>
+          <Typography variant="body2">Type: {feeding.type}</Typography>
+          <Typography variant="body2">Quantity: {feeding.quantity} גרם</Typography>
+          <Typography variant="body2">Time: {dayjs(feeding.time).format('HH:mm')}</Typography>
+        </Box>
+      );
     }
+    return null;
   };
 
   return (
@@ -167,17 +182,17 @@ function FeedingLog() {
           elevation={3}
           sx={{
             mb: 4,
-            background: theme.background,
-            color: theme.textColor,
+            background: '#D9AFD9',
+            color: '#333',
             borderRadius: '8px',
             boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
           }}
         >
           <CardContent>
-            <Typography variant="h5" textAlign="center" gutterBottom sx={{ color: theme.textColor }}>
+            <Typography variant="h5" textAlign="center" gutterBottom>
               הוסף רישום חדש
             </Typography>
-            <Divider sx={{ mb: 2, backgroundColor: theme.textColor }} />
+            <Divider sx={{ mb: 2, backgroundColor: '#333' }} />
             <Box component="form" onSubmit={handleSubmit} mb={4}>
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
@@ -188,7 +203,6 @@ function FeedingLog() {
                     onChange={handleTypeChange}
                     fullWidth
                     required
-                    sx={{ color: theme.textColor }}
                   >
                     <MenuItem value="מטרנה">מטרנה</MenuItem>
                     <MenuItem value="חלב אם">חלב אם</MenuItem>
@@ -198,7 +212,7 @@ function FeedingLog() {
                   </TextField>
                 </Grid>
 
-                {isCustomType && (
+                {customType && (
                   <Grid item xs={12} sm={6}>
                     <TextField
                       label="שם אוכל מותאם"
@@ -206,7 +220,6 @@ function FeedingLog() {
                       onChange={(e) => setCustomType(e.target.value)}
                       fullWidth
                       required
-                      sx={{ color: theme.textColor }}
                     />
                   </Grid>
                 )}
@@ -219,7 +232,6 @@ function FeedingLog() {
                     onChange={(e) => setQuantity(e.target.value)}
                     fullWidth
                     required
-                    sx={{ color: theme.textColor }}
                   />
                 </Grid>
 
@@ -230,7 +242,6 @@ function FeedingLog() {
                     onChange={(newTime) => setTime(newTime)}
                     renderInput={(params) => <TextField {...params} fullWidth />}
                     required
-                    sx={{ color: theme.textColor }}
                   />
                 </Grid>
 
@@ -242,7 +253,6 @@ function FeedingLog() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     fullWidth
-                    sx={{ color: theme.textColor }}
                   />
                 </Grid>
 
@@ -254,7 +264,6 @@ function FeedingLog() {
                     value={bloodSugarLevel}
                     onChange={(e) => setBloodSugarLevel(e.target.value)}
                     fullWidth
-                    sx={{ color: theme.textColor }}
                   />
                 </Grid>
 
@@ -264,13 +273,12 @@ function FeedingLog() {
                     value={measurementTime}
                     onChange={(newTime) => setMeasurementTime(newTime)}
                     renderInput={(params) => <TextField {...params} fullWidth />}
-                    sx={{ color: theme.textColor }}
                   />
                 </Grid>
 
                 <Grid item xs={12}>
                   <Button type="submit" variant="contained" color="primary" fullWidth>
-                    הוסף רישום
+                    {selectedFeeding ? 'עדכן רישום' : 'הוסף רישום'}
                   </Button>
                 </Grid>
               </Grid>
@@ -278,55 +286,95 @@ function FeedingLog() {
           </CardContent>
         </Card>
 
-        {/* Feeding Timeline */}
-        <Box mt={4} onTouchMove={handleZoom} sx={{ overflowX: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Timeline
-            position="alternate"
-            sx={{
-              flexDirection: 'row',
-              flexWrap: 'nowrap',
-              transform: `scale(${zoomLevel})`, // Scale icons based on zoom level
-              transformOrigin: 'center',
-              transition: 'transform 0.3s ease-in-out',
-            }}
-          >
-            {feedings.map((feeding) => (
-              <TimelineItem key={feeding.id} sx={{ minWidth: '120px' }}>
-                <TimelineSeparator>
-                  <TimelineDot color="primary" sx={{ height: `${25 * zoomLevel}px`, width: `${25 * zoomLevel}px` }} />
-                  <TimelineConnector />
-                </TimelineSeparator>
-                <TimelineContent sx={{ textAlign: 'center' }}>
-                  <IconButton onClick={() => handleDialogOpen(feeding)} sx={{ transform: `scale(${zoomLevel})` }}>
-                    <LocalDrinkIcon sx={{ fontSize: `${30 * zoomLevel}px` }} />
-                  </IconButton>
-                  <Typography variant="body2" color="textSecondary">
-                    {new Date(feeding.time).toLocaleDateString('he-IL')} - {dayjs(feeding.time).format('HH:mm')}
-                  </Typography>
-                </TimelineContent>
-              </TimelineItem>
+        {/* Graph */}
+        <ResponsiveContainer width="100%" height={400}>
+          <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+            <XAxis
+              dataKey="date"
+              type="category"
+              name="Date"
+              tickFormatter={(date) => dayjs(date).format('DD/MM')}
+              label={{ value: 'Dates', position: 'insideBottom', offset: -10 }}
+            />
+            <YAxis
+              dataKey="time"
+              type="number"
+              domain={[0, 24]}
+              name="Time"
+              tickFormatter={(time) => dayjs().startOf('day').add(time, 'hours').format('HH:mm')}
+              label={{ value: 'Time', angle: -90, position: 'insideLeft' }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            {Object.keys(feedingTypes).map((type) => (
+              <Scatter
+                key={type}
+                data={getScatterData().filter((d) => d.type === type)}
+                fill={feedingTypes[type]}
+                shape={<LocalDrinkIcon />}
+                onClick={(data) => handleDialogOpen(data.feeding)}
+              />
             ))}
-          </Timeline>
-        </Box>
+          </ScatterChart>
+        </ResponsiveContainer>
 
-        {/* Feeding Details Dialog */}
+        {/* Edit/Delete Dialogs */}
         <Dialog open={dialogOpen} onClose={handleDialogClose}>
-          <DialogTitle>פרטי רישום האכלה</DialogTitle>
+          <DialogTitle>{selectedFeeding ? 'ערוך רישום' : 'הוסף רישום חדש'}</DialogTitle>
           <DialogContent>
-            {selectedFeeding && (
-              <>
-                <Typography>סוג: {selectedFeeding.type}</Typography>
-                <Typography>כמות: {selectedFeeding.quantity} גרם</Typography>
-                <Typography>הערות: {selectedFeeding.notes || 'אין הערות'}</Typography>
-                {selectedFeeding.bloodSugar && (
-                  <Typography>רמת סוכר בדם: {selectedFeeding.bloodSugar.level} mg/dL</Typography>
-                )}
-              </>
-            )}
+            <Box component="form" onSubmit={handleSubmit}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    label="סוג אוכל"
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                    fullWidth
+                  >
+                    {Object.keys(feedingTypes).map((type) => (
+                      <MenuItem key={type} value={type}>
+                        {type}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="כמות (גרם)"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    fullWidth
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <DateTimePicker
+                    label="שעת האכלה"
+                    value={time}
+                    onChange={(newTime) => setTime(newTime)}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="הערות"
+                    multiline
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    fullWidth
+                  />
+                </Grid>
+              </Grid>
+            </Box>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleDialogClose} color="primary">
-              סגור
+            <Button onClick={handleDialogClose}>Cancel</Button>
+            <Button onClick={handleSubmit} color="primary">
+              Save
             </Button>
           </DialogActions>
         </Dialog>
