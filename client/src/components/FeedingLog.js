@@ -40,7 +40,6 @@ function FeedingLog() {
   const [isCustomType, setIsCustomType] = useState(false);
   const [bloodSugarLevel, setBloodSugarLevel] = useState('');
   const [measurementTime, setMeasurementTime] = useState(dayjs());
-
   const [zoomLevel, setZoomLevel] = useState(1); // Control the zoom level
 
   const [theme, setTheme] = useState({
@@ -54,7 +53,7 @@ function FeedingLog() {
   useEffect(() => {
     const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
     if (savedTheme) {
-      setTheme(savedTheme); 
+      setTheme(savedTheme);
     }
   }, []);
 
@@ -65,11 +64,11 @@ function FeedingLog() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFeedings(response.data);
-      setLastFeeding(response.data[0]); 
+      setLastFeeding(response.data[0]);
     } catch (error) {
       console.error('Error fetching feedings:', error);
     }
-  };  
+  };
 
   useEffect(() => {
     if (finalBabyId) {
@@ -133,14 +132,21 @@ function FeedingLog() {
     }
   };
 
-  // Handle Zoom In/Out for the timeline
-  const handleZoom = (direction) => {
-    setZoomLevel((prevZoom) => {
-      let newZoom = prevZoom + (direction === 'in' ? 0.2 : -0.2);
-      if (newZoom < 0.5) newZoom = 0.5; // Limit zoom out
-      if (newZoom > 2) newZoom = 2; // Limit zoom in
-      return newZoom;
-    });
+  // Handle pinch-to-zoom gesture
+  const handleZoom = (e) => {
+    if (e.touches && e.touches.length === 2) {
+      const distance = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+
+      setZoomLevel((prevZoom) => {
+        let newZoom = prevZoom + (distance > 100 ? 0.1 : -0.1);
+        if (newZoom < 0.5) newZoom = 0.5;
+        if (newZoom > 2) newZoom = 2;
+        return newZoom;
+      });
+    }
   };
 
   return (
@@ -273,10 +279,7 @@ function FeedingLog() {
         </Card>
 
         {/* Feeding Timeline */}
-        <Box mt={4} sx={{ overflowX: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Button onClick={() => handleZoom('out')}>Zoom Out</Button>
-          <Button onClick={() => handleZoom('in')}>Zoom In</Button>
-
+        <Box mt={4} onTouchMove={handleZoom} sx={{ overflowX: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Timeline
             position="alternate"
             sx={{
@@ -298,7 +301,7 @@ function FeedingLog() {
                     <LocalDrinkIcon sx={{ fontSize: `${30 * zoomLevel}px` }} />
                   </IconButton>
                   <Typography variant="body2" color="textSecondary">
-                    {new Date(feeding.time).toLocaleDateString('he-IL')}
+                    {new Date(feeding.time).toLocaleDateString('he-IL')} - {dayjs(feeding.time).format('HH:mm')}
                   </Typography>
                 </TimelineContent>
               </TimelineItem>

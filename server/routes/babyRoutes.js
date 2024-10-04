@@ -2,13 +2,13 @@ const express = require('express');
 const multer = require('multer');
 const router = express.Router();
 const { Baby, Food, BloodSugar, sequelize } = require('../models');
-const { Op } = require('sequelize'); 
+const { Op } = require('sequelize');
 const { authenticateToken } = require('./authenticateToken');
 
 // Set up multer for in-memory file storage
 const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage: storage, 
+const upload = multer({
+  storage: storage,
   limits: { fileSize: 50 * 1024 * 1024 } // Limit to 50MB 
 });
 
@@ -19,7 +19,7 @@ const convertImageToBase64 = (fileBuffer) => {
 // Get all babies
 router.get('/babies', authenticateToken, async (req, res) => {
   try {
-    const babies = await Baby.findAll({ where: { userId: req.user.id } }); 
+    const babies = await Baby.findAll({ where: { userId: req.user.id } });
     res.json(babies);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching babies' });
@@ -108,12 +108,12 @@ router.delete('/babies/:id', authenticateToken, async (req, res) => {
 
 // Get feeding logs with related blood sugar data, with optional limit query
 router.get('/babies/:id/foods', authenticateToken, async (req, res) => {
-  const limit = parseInt(req.query.limit, 10) || 10; 
+  const limit = parseInt(req.query.limit, 10) || 10;
   try {
     const foods = await Food.findAll({
       where: { babyId: req.params.id },
       order: [['time', 'DESC']],
-      limit, 
+      limit,
     });
     res.json(foods);
   } catch (error) {
@@ -155,7 +155,7 @@ router.post('/babies/:id/foods-and-blood-sugar', authenticateToken, async (req, 
         measurementTime: bloodSugar.measurementTime || time,
         notes: bloodSugar.notes || null,
         babyId: req.params.id,
-        foodId: newFood.id, 
+        foodId: newFood.id,
       }, { transaction: t });
     }
 
@@ -171,7 +171,7 @@ router.post('/babies/:id/foods-and-blood-sugar', authenticateToken, async (req, 
 router.get('/babies-all/blood-sugars', authenticateToken, async (req, res) => {
   try {
     const { startDate, endDate } = req.query; // Extract date range from query params
-    
+
     // Base query options
     const queryOptions = {
       include: {
@@ -217,6 +217,57 @@ router.get('/babies-all/foods', authenticateToken, async (req, res) => {
     res.json(foods);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching all food logs' });
+  }
+});
+
+// Update feeding log
+router.put('/babies/:id/foods/:foodId', authenticateToken, async (req, res) => {
+  const { type, quantity, time, notes } = req.body;
+  try {
+    const food = await Food.findByPk(req.params.foodId);
+    if (food && food.babyId === req.params.id) {
+      food.type = type;
+      food.quantity = quantity;
+      food.time = time;
+      food.notes = notes;
+      await food.save();
+      res.json(food);
+    } else {
+      res.status(404).json({ error: 'Feeding log not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error updating feeding log' });
+  }
+});
+
+
+// Delete feeding log
+router.delete('/babies/:id/foods/:foodId', authenticateToken, async (req, res) => {
+  try {
+    // Find the food log by its ID
+    const food = await Food.findByPk(req.params.foodId);
+
+    // Check if the food log exists and belongs to the baby
+    if (food && food.babyId === req.params.id) {
+
+      // Check if there's a related blood sugar test associated with this food log
+      const bloodSugar = await BloodSugar.findOne({ where: { foodId: req.params.foodId } });
+
+      // If a blood sugar test exists, remove the connection by setting foodId to null
+      if (bloodSugar) {
+        bloodSugar.foodId = null;
+        await bloodSugar.save();
+      }
+
+      // Now, delete the food log
+      await food.destroy();
+
+      res.json({ message: 'Feeding log deleted successfully, blood sugar connection removed if it existed' });
+    } else {
+      res.status(404).json({ error: 'Feeding log not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Error deleting feeding log' });
   }
 });
 
