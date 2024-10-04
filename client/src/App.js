@@ -8,6 +8,7 @@ import BabyList from './components/BabyList';
 import FeedingLog from './components/FeedingLog';
 import BabyForm from './components/BabyForm';
 import EditBaby from './components/EditBaby';
+import SettingsComp from './components/Settings';
 import NavBar from './components/NavBar';
 import SimpleNavBar from './components/SimpleNavBar'; // Import SimpleNavBar
 import { AuthProvider } from './context/AuthContext';
@@ -66,6 +67,7 @@ function App() {
               <Route path="/baby/:babyId/feeding-log" element={<FeedingLog />} />
               <Route path="/baby/:babyId/blood-sugar-log" element={<BloodSugarLog />} />
               <Route path="/edit-baby/:babyId" element={<EditBaby />} />
+              <Route path="/settings" element={<SettingsComp />} />
               <Route path="*" element={<h1 style={{ color: theme.textColor }}>404 Not Found</h1>} />
             </Routes>
           </Router>

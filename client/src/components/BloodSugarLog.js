@@ -177,13 +177,13 @@ function BloodSugarLog() {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell textAlign="right" sx={{ color: theme.textColor }}>
+                      <TableCell textAlign="right" sx={{ color: '#000000' }}>
                         רמת סוכר
                       </TableCell>
-                      <TableCell textAlign="right" sx={{ color: theme.textColor }}>
+                      <TableCell textAlign="right" sx={{ color: '#000000' }}>
                         שעת מדידה
                       </TableCell>
-                      <TableCell textAlign="right" sx={{ color: theme.textColor }}>
+                      <TableCell textAlign="right" sx={{ color: '#000000' }}>
                         הערות
                       </TableCell>
                     </TableRow>
@@ -191,13 +191,13 @@ function BloodSugarLog() {
                   <TableBody>
                     {bloodSugars.map((record) => (
                       <TableRow key={record.id}>
-                        <TableCell textAlign="right" sx={{ color: theme.textColor }}>
+                        <TableCell textAlign="right" sx={{ color: '#000000' }}>
                           {record.level}
                         </TableCell>
-                        <TableCell textAlign="right" sx={{ color: theme.textColor }}>
+                        <TableCell textAlign="right" sx={{ color: '#000000' }}>
                           {new Date(record.measurementTime).toLocaleString('he-IL')}
                         </TableCell>
-                        <TableCell textAlign="right" sx={{ color: theme.textColor }}>
+                        <TableCell textAlign="right" sx={{ color: '#000000' }}>
                           {record.notes || 'אין הערות'}
                         </TableCell>
                       </TableRow>

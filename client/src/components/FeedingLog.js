@@ -17,16 +17,13 @@ import {
   TextField,
   Grid,
   MenuItem,
+  IconButton,
 } from '@mui/material';
 import LocalDrinkIcon from '@mui/icons-material/LocalDrink';
-import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, registerables } from 'chart.js';
-import zoomPlugin from 'chartjs-plugin-zoom';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-
-ChartJS.register(...registerables, zoomPlugin);
+import { Timeline, TimelineItem, TimelineSeparator, TimelineDot, TimelineConnector, TimelineContent } from '@mui/lab';
 
 function FeedingLog() {
   const { babyId } = useParams();
@@ -44,6 +41,8 @@ function FeedingLog() {
   const [bloodSugarLevel, setBloodSugarLevel] = useState('');
   const [measurementTime, setMeasurementTime] = useState(dayjs());
 
+  const [zoomLevel, setZoomLevel] = useState(1); // Control the zoom level
+
   const [theme, setTheme] = useState({
     backgroundColor: '#D9AFD9',
     backgroundImage: 'linear-gradient(0deg, #D9AFD9 0%, #97D9E1 100%)',
@@ -51,21 +50,30 @@ function FeedingLog() {
   });
 
   const finalBabyId = babyId || selectedBabyId;
-  const fetchFeedings = async () => {
+
+  useEffect(() => {
+    const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
+    if (savedTheme) {
+      setTheme(savedTheme); 
+    }
+  }, []);
+
+  const fetchFeedings = async (babyId) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods?limit=10`, {
+      const response = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}/foods`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setFeedings(response.data);
-      setLastFeeding(response.data[0]); // Most recent feeding
+      setLastFeeding(response.data[0]); 
     } catch (error) {
       console.error('Error fetching feedings:', error);
     }
-  };
+  };  
+
   useEffect(() => {
     if (finalBabyId) {
-      fetchFeedings();
+      fetchFeedings(finalBabyId);
     }
   }, [finalBabyId]);
 
@@ -112,7 +120,6 @@ function FeedingLog() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Clear form
       setType('מטרנה');
       setCustomType('');
       setQuantity('');
@@ -126,63 +133,14 @@ function FeedingLog() {
     }
   };
 
-  // Prepare data for the chart
-  const chartData = {
-    labels: feedings.map((feeding) => new Date(feeding.time).toLocaleString('he-IL')),
-    datasets: [
-      {
-        label: 'Feedings',
-        data: feedings.map(() => 1), // Fixed Y-axis value for the icon position
-        pointRadius: 10, // Size of the icons
-        pointHoverRadius: 12,
-        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
-        pointStyle: 'image',
-        showLine: false, // Hide the connecting lines
-        pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)',
-        pointHitRadius: 20,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    scales: {
-      x: {
-        type: 'time',
-        time: {
-          unit: 'hour',
-          tooltipFormat: 'MMM D, h:mm a',
-        },
-        title: {
-          display: true,
-          text: 'Date & Time',
-        },
-      },
-      y: {
-        display: false, // Hide Y-axis as it's irrelevant
-      },
-    },
-    plugins: {
-      zoom: {
-        pan: {
-          enabled: true,
-          mode: 'x',
-        },
-        zoom: {
-          wheel: {
-            enabled: true,
-          },
-          mode: 'x',
-          speed: 0.1,
-        },
-      },
-    },
-    onClick: (event, elements) => {
-      if (elements.length > 0) {
-        const index = elements[0].index;
-        handleDialogOpen(feedings[index]);
-      }
-    },
+  // Handle Zoom In/Out for the timeline
+  const handleZoom = (direction) => {
+    setZoomLevel((prevZoom) => {
+      let newZoom = prevZoom + (direction === 'in' ? 0.2 : -0.2);
+      if (newZoom < 0.5) newZoom = 0.5; // Limit zoom out
+      if (newZoom > 2) newZoom = 2; // Limit zoom in
+      return newZoom;
+    });
   };
 
   return (
@@ -314,9 +272,38 @@ function FeedingLog() {
           </CardContent>
         </Card>
 
-        {/* Feeding Chart */}
-        <Box mt={4} sx={{ background: '#f0f0f0', p: 4, borderRadius: '8px' }}>
-          <Line data={chartData} options={chartOptions} />
+        {/* Feeding Timeline */}
+        <Box mt={4} sx={{ overflowX: 'scroll', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Button onClick={() => handleZoom('out')}>Zoom Out</Button>
+          <Button onClick={() => handleZoom('in')}>Zoom In</Button>
+
+          <Timeline
+            position="alternate"
+            sx={{
+              flexDirection: 'row',
+              flexWrap: 'nowrap',
+              transform: `scale(${zoomLevel})`, // Scale icons based on zoom level
+              transformOrigin: 'center',
+              transition: 'transform 0.3s ease-in-out',
+            }}
+          >
+            {feedings.map((feeding) => (
+              <TimelineItem key={feeding.id} sx={{ minWidth: '120px' }}>
+                <TimelineSeparator>
+                  <TimelineDot color="primary" sx={{ height: `${25 * zoomLevel}px`, width: `${25 * zoomLevel}px` }} />
+                  <TimelineConnector />
+                </TimelineSeparator>
+                <TimelineContent sx={{ textAlign: 'center' }}>
+                  <IconButton onClick={() => handleDialogOpen(feeding)} sx={{ transform: `scale(${zoomLevel})` }}>
+                    <LocalDrinkIcon sx={{ fontSize: `${30 * zoomLevel}px` }} />
+                  </IconButton>
+                  <Typography variant="body2" color="textSecondary">
+                    {new Date(feeding.time).toLocaleDateString('he-IL')}
+                  </Typography>
+                </TimelineContent>
+              </TimelineItem>
+            ))}
+          </Timeline>
         </Box>
 
         {/* Feeding Details Dialog */}
@@ -335,7 +322,9 @@ function FeedingLog() {
             )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleDialogClose} color="primary">סגור</Button>
+            <Button onClick={handleDialogClose} color="primary">
+              סגור
+            </Button>
           </DialogActions>
         </Dialog>
       </Container>

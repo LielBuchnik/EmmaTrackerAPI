@@ -174,9 +174,11 @@ const NavBar = () => {
         }}
       >
         {[
+          { to: '/settings', label: 'הגדרות', icon: './images/baby-icon.png' },
           { to: '/blood-sugar', label: 'סוכר בדם', icon: './images/blood-sugar-icon.png' },
           { to: '/food', label: 'מזון', icon: './images/food-icon.png' },
           { to: '/babies', label: 'תינוק', icon: './images/baby-icon.png' },
+
         ].map((item) => (
           <Box textAlign="center" sx={{ mx: 2 }} key={item.to}>
             <Link to={item.to} style={{ textDecoration: 'none' }}>
