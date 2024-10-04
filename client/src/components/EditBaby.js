@@ -28,7 +28,7 @@ function EditBaby() {
     textColor: '#000',
   });
   const navigate = useNavigate();
-  
+
 
 
   useEffect(() => {
@@ -38,7 +38,7 @@ function EditBaby() {
         const response = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-  
+
         const baby = response.data;
         setName(baby.name);
         setBirthdate(baby.birthdate);
@@ -57,40 +57,43 @@ function EditBaby() {
     }
   }, [babyId]);
 
-  // Convert image file to base64
+  // Convert image file to base64 and update preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImageBase64(reader.result); // Store the base64 string
+        const dataURL = reader.result;
+        setImagePreview(dataURL); // Update the preview with the data URL
+        const base64String = dataURL.split(',')[1]; // Extract base64 string without the data URL prefix
+        setImageBase64(base64String); // Store the base64 string
       };
       reader.readAsDataURL(file); // Convert to base64
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const babyData = {
       name,
       birthdate,
       gender,
       imageBase64, // Send base64 image string to the backend
     };
-  
+
     try {
       const token = localStorage.getItem('token');
       await axios.post('http://185.47.173.90:3001/api/babies', babyData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
+
       navigate('/babies');
     } catch (error) {
       console.error('Error adding baby:', error);
     }
   };
-  
+
 
   return (
     <Container maxWidth="sm">
