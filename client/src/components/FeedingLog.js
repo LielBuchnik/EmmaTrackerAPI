@@ -5,34 +5,36 @@ import { BabyContext } from '../context/BabyContext';
 import {
   Container,
   Typography,
-  Button,
-  Grid,
   Box,
   Card,
   CardContent,
   Divider,
-  IconButton,
-  TextField,
-  MenuItem,
+  Button,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  TextField,
+  Grid,
+  MenuItem,
 } from '@mui/material';
 import LocalDrinkIcon from '@mui/icons-material/LocalDrink';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, registerables } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import { DateTimePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { Timeline, TimelineItem, TimelineSeparator, TimelineDot, TimelineConnector, TimelineContent } from '@mui/lab';
+
+ChartJS.register(...registerables, zoomPlugin);
 
 function FeedingLog() {
   const { babyId } = useParams();
   const { selectedBabyId } = useContext(BabyContext);
   const [feedings, setFeedings] = useState([]);
-  const [lastFeeding, setLastFeeding] = useState(null); // Track last feeding
-  const [dialogOpen, setDialogOpen] = useState(false); // Dialog control
-  const [selectedFeeding, setSelectedFeeding] = useState(null); // Selected feeding for dialog
+  const [lastFeeding, setLastFeeding] = useState(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedFeeding, setSelectedFeeding] = useState(null);
   const [type, setType] = useState('מטרנה');
   const [customType, setCustomType] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -51,31 +53,32 @@ function FeedingLog() {
   const finalBabyId = babyId || selectedBabyId;
 
   useEffect(() => {
-    const fetchTheme = () => {
-      const savedTheme = JSON.parse(localStorage.getItem('userTheme'));
-      if (savedTheme) {
-        setTheme(savedTheme); // Apply user-selected theme
+    const fetchFeedings = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`http://185.47.173.90:3001/api/babies/${finalBabyId}/foods?limit=10`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setFeedings(response.data);
+        setLastFeeding(response.data[0]); // Most recent feeding
+      } catch (error) {
+        console.error('Error fetching feedings:', error);
       }
     };
 
-    fetchTheme();
-
     if (finalBabyId) {
-      fetchFeedings(finalBabyId);
+      fetchFeedings();
     }
   }, [finalBabyId]);
 
-  const fetchFeedings = async (babyId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`http://185.47.173.90:3001/api/babies/${babyId}/foods?limit=10`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setFeedings(response.data);
-      setLastFeeding(response.data[0]); // Set the most recent feeding
-    } catch (error) {
-      console.error('Error fetching feedings:', error);
-    }
+  const handleDialogOpen = (feeding) => {
+    setSelectedFeeding(feeding);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setSelectedFeeding(null);
   };
 
   const handleTypeChange = (e) => {
@@ -125,20 +128,69 @@ function FeedingLog() {
     }
   };
 
-  const handleDialogOpen = (feeding) => {
-    setSelectedFeeding(feeding);
-    setDialogOpen(true);
+  // Prepare data for the chart
+  const chartData = {
+    labels: feedings.map((feeding) => new Date(feeding.time).toLocaleString('he-IL')),
+    datasets: [
+      {
+        label: 'Feedings',
+        data: feedings.map(() => 1), // Fixed Y-axis value for the icon position
+        pointRadius: 10, // Size of the icons
+        pointHoverRadius: 12,
+        pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+        pointStyle: 'image',
+        showLine: false, // Hide the connecting lines
+        pointHoverBackgroundColor: 'rgba(255, 99, 132, 1)',
+        pointHitRadius: 20,
+      },
+    ],
   };
 
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setSelectedFeeding(null);
+  const chartOptions = {
+    responsive: true,
+    scales: {
+      x: {
+        type: 'time',
+        time: {
+          unit: 'hour',
+          tooltipFormat: 'MMM D, h:mm a',
+        },
+        title: {
+          display: true,
+          text: 'Date & Time',
+        },
+      },
+      y: {
+        display: false, // Hide Y-axis as it's irrelevant
+      },
+    },
+    plugins: {
+      zoom: {
+        pan: {
+          enabled: true,
+          mode: 'x',
+        },
+        zoom: {
+          wheel: {
+            enabled: true,
+          },
+          mode: 'x',
+          speed: 0.1,
+        },
+      },
+    },
+    onClick: (event, elements) => {
+      if (elements.length > 0) {
+        const index = elements[0].index;
+        handleDialogOpen(feedings[index]);
+      }
+    },
   };
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Container maxWidth="md">
-        {/* Display Last Feeding Date with Bottle Icon */}
+        {/* Display Last Feeding */}
         {lastFeeding && (
           <Box display="flex" justifyContent="center" alignItems="center" mb={4}>
             <LocalDrinkIcon fontSize="large" />
@@ -149,153 +201,125 @@ function FeedingLog() {
         )}
 
         {/* Feeding Form */}
-        {finalBabyId && (
-          <Card
-            elevation={3}
-            sx={{
-              mb: 4,
-              background: theme.background,
-              color: theme.textColor,
-              borderRadius: '8px',
-              boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
-            }}
-          >
-            <CardContent>
-              <Typography variant="h5" textAlign="center" gutterBottom sx={{ color: theme.textColor }}>
-                הוסף רישום חדש
-              </Typography>
-              <Divider sx={{ mb: 2, backgroundColor: theme.textColor }} />
-              <Box component="form" onSubmit={handleSubmit} mb={4}>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      select
-                      label="סוג אוכל"
-                      value={type}
-                      onChange={handleTypeChange}
-                      fullWidth
-                      required
-                      sx={{ color: theme.textColor }}
-                    >
-                      <MenuItem value="מטרנה">מטרנה</MenuItem>
-                      <MenuItem value="חלב אם">חלב אם</MenuItem>
-                      <MenuItem value="סימילק">סימילק</MenuItem>
-                      <MenuItem value="נוטרילון">נוטרילון</MenuItem>
-                      <MenuItem value="אחר">אחר</MenuItem>
-                    </TextField>
-                  </Grid>
-
-                  {isCustomType && (
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="שם אוכל מותאם"
-                        value={customType}
-                        onChange={(e) => setCustomType(e.target.value)}
-                        fullWidth
-                        required
-                        sx={{ color: theme.textColor }}
-                      />
-                    </Grid>
-                  )}
-
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="כמות (גרם)"
-                      type="number"
-                      value={quantity}
-                      onChange={(e) => setQuantity(e.target.value)}
-                      fullWidth
-                      required
-                      sx={{ color: theme.textColor }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <DateTimePicker
-                      label="שעת האכלה"
-                      value={time}
-                      onChange={(newTime) => setTime(newTime)}
-                      renderInput={(params) => <TextField {...params} fullWidth />}
-                      required
-                      sx={{ color: theme.textColor }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <TextField
-                      label="הערות"
-                      multiline
-                      rows={3}
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      fullWidth
-                      sx={{ color: theme.textColor }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="רמת סוכר"
-                      type="number"
-                      step="0.1"
-                      value={bloodSugarLevel}
-                      onChange={(e) => setBloodSugarLevel(e.target.value)}
-                      fullWidth
-                      sx={{ color: theme.textColor }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <DateTimePicker
-                      label="שעת מדידת סוכר (אופציונלי)"
-                      value={measurementTime}
-                      onChange={(newTime) => setMeasurementTime(newTime)}
-                      renderInput={(params) => <TextField {...params} fullWidth />}
-                      sx={{ color: theme.textColor }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Button type="submit" variant="contained" color="primary" fullWidth>
-                      הוסף רישום
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Box>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Timeline for last feedings */}
-        {feedings.length > 0 && (
-          <Box mt={4} sx={{ background: theme.background, color: theme.textColor, borderRadius: '8px' }}>
-            <Typography variant="h5" color={theme.textColor} textAlign="center" gutterBottom>
-              רישומי אוכל אחרונים
+        <Card
+          elevation={3}
+          sx={{
+            mb: 4,
+            background: theme.background,
+            color: theme.textColor,
+            borderRadius: '8px',
+            boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          <CardContent>
+            <Typography variant="h5" textAlign="center" gutterBottom sx={{ color: theme.textColor }}>
+              הוסף רישום חדש
             </Typography>
             <Divider sx={{ mb: 2, backgroundColor: theme.textColor }} />
+            <Box component="form" onSubmit={handleSubmit} mb={4}>
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    select
+                    label="סוג אוכל"
+                    value={type}
+                    onChange={handleTypeChange}
+                    fullWidth
+                    required
+                    sx={{ color: theme.textColor }}
+                  >
+                    <MenuItem value="מטרנה">מטרנה</MenuItem>
+                    <MenuItem value="חלב אם">חלב אם</MenuItem>
+                    <MenuItem value="סימילק">סימילק</MenuItem>
+                    <MenuItem value="נוטרילון">נוטרילון</MenuItem>
+                    <MenuItem value="אחר">אחר</MenuItem>
+                  </TextField>
+                </Grid>
 
-            <Timeline position="alternate" sx={{ flexDirection: 'row' }}>
-              {feedings.map((feeding) => (
-                <TimelineItem key={feeding.id} sx={{ minWidth: '120px' }}>
-                  <TimelineSeparator>
-                    <TimelineDot color="primary">
-                      <IconButton onClick={() => handleDialogOpen(feeding)} size="small">
-                        <LocalDrinkIcon fontSize="small" />
-                      </IconButton>
-                    </TimelineDot>
-                    <TimelineConnector />
-                  </TimelineSeparator>
-                  <TimelineContent sx={{ textAlign: 'center' }}>
-                    <Typography variant="body2" color="textSecondary">
-                      <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} />
-                      {new Date(feeding.time).toLocaleString('he-IL')}
-                    </Typography>
-                  </TimelineContent>
-                </TimelineItem>
-              ))}
-            </Timeline>
-          </Box>
-        )}
+                {isCustomType && (
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="שם אוכל מותאם"
+                      value={customType}
+                      onChange={(e) => setCustomType(e.target.value)}
+                      fullWidth
+                      required
+                      sx={{ color: theme.textColor }}
+                    />
+                  </Grid>
+                )}
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="כמות (גרם)"
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(e.target.value)}
+                    fullWidth
+                    required
+                    sx={{ color: theme.textColor }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DateTimePicker
+                    label="שעת האכלה"
+                    value={time}
+                    onChange={(newTime) => setTime(newTime)}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    required
+                    sx={{ color: theme.textColor }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    label="הערות"
+                    multiline
+                    rows={3}
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    fullWidth
+                    sx={{ color: theme.textColor }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    label="רמת סוכר"
+                    type="number"
+                    step="0.1"
+                    value={bloodSugarLevel}
+                    onChange={(e) => setBloodSugarLevel(e.target.value)}
+                    fullWidth
+                    sx={{ color: theme.textColor }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <DateTimePicker
+                    label="שעת מדידת סוכר (אופציונלי)"
+                    value={measurementTime}
+                    onChange={(newTime) => setMeasurementTime(newTime)}
+                    renderInput={(params) => <TextField {...params} fullWidth />}
+                    sx={{ color: theme.textColor }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Button type="submit" variant="contained" color="primary" fullWidth>
+                    הוסף רישום
+                  </Button>
+                </Grid>
+              </Grid>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* Feeding Chart */}
+        <Box mt={4} sx={{ background: '#f0f0f0', p: 4, borderRadius: '8px' }}>
+          <Line data={chartData} options={chartOptions} />
+        </Box>
 
         {/* Feeding Details Dialog */}
         <Dialog open={dialogOpen} onClose={handleDialogClose}>
